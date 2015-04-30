@@ -2,7 +2,7 @@ var app = require('express')();
 var http = require('http').Server(app);
 var architecture = require('./architecture.js'),
 	Room = architecture.Room,
-	User = architecture.User
+	User = architecture.User,
 	IDgenerator = architecture.IDgenerator;
 var io = require('socket.io').listen(http);
 
@@ -15,13 +15,13 @@ http.listen(3000, function(){
   console.log('listening on *:3000');
 });
 
+/*
 io.on('connection', function(socket){
   socket.on('chat message', function(msg){
     io.emit('chat message', msg);
   });
 });
 
-/*
 var users = {};
 var rooms = {};
 
@@ -85,4 +85,5 @@ io.sockets.on('connection', function(socket) {
 
 		socket.emit('onRoomUpdate', room.getRoomState());
 	})	
-});*/
+});
+*/

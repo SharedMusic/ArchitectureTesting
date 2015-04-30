@@ -7,7 +7,7 @@ var should = require('should'),
   sets = require('simplesets'),
   Set = sets.Set;
   
-describe("Architecture RoomState",function(){
+describe("Architecture Room",function(){
 
   it('Should populate properties on creating new Room',function(done){
     // Arrange
@@ -23,6 +23,7 @@ describe("Architecture RoomState",function(){
     newRoom.id.should.equal(newRoomID);
     newRoom._state.should.be.an.instanceof(RoomState);
     newRoom._state.name.should.equal(newRoomName);
+    should.not.exist(newRoom._songTimeout);
     newRoom._onChange.should.equal(newRoomOnChange);
     done();
   });
@@ -45,17 +46,23 @@ describe("Architecture RoomState",function(){
 
     // Assert
     newRoom._state.users.has(newUser).should.equal(true);
+    newRoom._state.users.size().should.equal(1);
     done();
   });
 
   it('Should raise onChange with RoomState when successfully adding user to room', function(done) {
     // Arrange
+    var newUserName = 'testName';
+    var newUserID = 1;
+    var newUser;
+
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
     var newRoomOnChange = 
-      function(roomState, error) {
+      function(roomState, error, userID) {
         // Assert
+        should.not.exist(userID);
         should.not.exist(error);
         roomState.should.not.equal(null);
         roomState.users.size().should.equal(1);
@@ -63,45 +70,42 @@ describe("Architecture RoomState",function(){
         done();
       };
 
-    var newUserName = 'testName';
-    var newUserID = 1;
-    var newUser;
-
     // Act
     newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
     newUser = new User(newUserName, newUserID);
     newRoom.addUser(newUser, newRoomOnChange);
   });
 
-  it('Should raise onChange with error when failing to add a user to room', function(done) {
+  //TODO test add multiple users to room (2 or more)
+
+  //TODO test cant add original user after adding other users
+
+  it('Should raise onChange with error when adding same user twice to a room', function(done) {
     // Arrange
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
-    var onChangeCount = 0;
-
-
-    var newRoomOnChange = 
-      function(roomState, error) {
-        onChangeCount++;
-
-        if(onChangeCount == 2) {
-          // Assert
-          should.not.exist(roomState);
-          error.should.equal('User already exists in room!')
-          done();
-        }
-      };
 
     var newUserName = 'testName';
     var newUserID = 1;
     var newUser;
 
-    // Act
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    var newRoomOnChange = 
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(roomState);
+        newUserID.should.equal(userID);
+        error.should.equal('User already exists in room!');
+        done();
+      };
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
     newUser = new User(newUserName, newUserID);
-    newRoom.addUser(newUser, newRoomOnChange);
-    newRoom.addUser(newUser, newRoomOnChange);
+    newRoom.addUser(newUser);
+    newRoom._onChange = newRoomOnChange;
+
+    // Act
+    newRoom.addUser(newUser);
   });
 
   it('Should remove user from the room on removeUser', function(done) {
@@ -109,16 +113,16 @@ describe("Architecture RoomState",function(){
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
-    var newRoomOnChange = function() { };
 
     var newUserName = 'testName';
     var newUserID = 1;
     var newUser;
 
-    // Act
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    newRoom = new Room(newRoomName, newRoomID, function() {});
     newUser = new User(newUserName, newUserID);
-    newRoom.addUser(newUser, newRoomOnChange);
+    newRoom.addUser(newUser);
+
+    // Act
     newRoom.removeUser(newUser);
 
     // Assert
@@ -132,46 +136,15 @@ describe("Architecture RoomState",function(){
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
-    var onChangeCount = 0;
 
     var newRoomOnChange = 
-      function(roomState, error) {
-        onChangeCount++;
-
-        if(onChangeCount == 2) {
-          // Assert
-          should.not.exist(error);
-          roomState.should.not.equal(null);
-          newRoom._state.users.has(newUser).should.equal(false);
-          newRoom._state.users.size().should.equal(0);
-          done();
-        }
-      };
-
-    var newUserName = 'testName';
-    var newUserID = 1;
-    var newUser;
-
-    // Act
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
-    newUser = new User(newUserName, newUserID);
-    newRoom.addUser(newUser);
-    newRoom.removeUser(newUser);
-  });
-
-
-  it('Should raise onChange with error when failing to remove user for room', function(done) {
-    // Arrange
-    var newRoomName = 'test';
-    var newRoomID = 1;
-    var newRoom;
-
-    var newRoomOnChange = 
-      function(roomState, error) {
+      function(roomState, error, userID) {
         // Assert
-        should.not.exist(roomState);
-        error.should.not.equal(null);
-        error.should.equal('User didn\'t exist in room!');
+        should.not.exist(userID);
+        should.not.exist(error);
+        roomState.should.not.equal(null);
+        newRoom._state.users.has(newUser).should.equal(false);
+        newRoom._state.users.size().should.equal(0);
         done();
       };
 
@@ -179,21 +152,52 @@ describe("Architecture RoomState",function(){
     var newUserID = 1;
     var newUser;
 
-    // Act
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    newRoom = new Room(newRoomName, newRoomID, function() {});
     newUser = new User(newUserName, newUserID);
+    newRoom.addUser(newUser);
+    newRoom._onChange = newRoomOnChange;
+
+    // Act
     newRoom.removeUser(newUser);
   });
+
+
+  it('Should raise onChange with error when removing a non-existent user for room', function(done) {
+    // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    var newUserName = 'testName';
+    var newUserID = 1;
+    var newUser;
+
+    var newRoomOnChange = 
+      function(roomState, error, userID) {
+        // Assert
+        newUserID.should.equal(userID);
+        should.not.exist(roomState);
+        error.should.not.equal(null);
+        error.should.equal('User didn\'t exist in room!');
+        done();
+      };
+
+    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    newUser = new User(newUserName, newUserID);
+
+    // Act
+    newRoom.removeUser(newUser);
+  });
+
+  //TODO remove multiple users that exist
 
   it('Should add user vote to bootVotes when votes are insufficient', function(done) {
     // Arrange
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
-    var newRoomOnChange = 
-      function(roomState, error) { };
 
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    newRoom = new Room(newRoomName, newRoomID, function() {});
 
     var newUser1 = new User('user1', 1);
     var newUser2 = new User('user2', 2);
@@ -203,19 +207,24 @@ describe("Architecture RoomState",function(){
     newRoom.addUser(newUser2);
     newRoom.addUser(newUser3);
 
-    var newTrack1 = 'track1';
-    var newTrack2 = 'track2';
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name};
 
     newRoom.addTrack(newUser1, newTrack1);
-    newRoom.addTrack(newTrack2);
+    newRoom.addTrack(newUser2, newTrack2);
+
+    var newRoomOnChange = function(roomState, error, userID) {
+      // Assert
+      roomState.should.not.equal(null);
+      should.not.exist(error);
+      should.not.exist(userID);
+      roomState.bootVotes.size().should.equal(1);
+      roomState.trackQueue.getLength().should.equal(2);
+      done();
+    }
 
     // Act
     newRoom.bootTrack(newUser1);
-
-    // Assert
-    newRoom._state.bootVotes.size().should.equal(1);
-
-    done();
   });
 
   it('Should not let user vote twice on same track', function(done) {
@@ -224,8 +233,6 @@ describe("Architecture RoomState",function(){
     var newRoomID = 1;
     var newRoom;
     var onChangeCount = 0;
-
-    var newRoomOnChangePass = function() { };
 
     var newRoomOnChangeFail = function(roomState, error) { 
       // Assert
@@ -236,7 +243,7 @@ describe("Architecture RoomState",function(){
       done();
     };
 
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChangePass);
+    newRoom = new Room(newRoomName, newRoomID, function() {});
 
     var newUser1 = new User('user1', 1);
     var newUser2 = new User('user2', 2);
@@ -246,8 +253,8 @@ describe("Architecture RoomState",function(){
     newRoom.addUser(newUser2);
     newRoom.addUser(newUser3);
 
-    var newTrack1 = 'track1';
-    var newTrack2 = 'track2';
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name};
 
     newRoom.addTrack(newUser1, newTrack1);
     newRoom.addTrack(newUser1, newTrack2);
@@ -286,8 +293,8 @@ describe("Architecture RoomState",function(){
     newRoom.addUser(newUser2);
     newRoom.addUser(newUser3);
 
-    var newTrack1 = 'track1';
-    var newTrack2 = 'track2';
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name};
 
     newRoom.addTrack(newUser1, newTrack1);
     newRoom.addTrack(newTrack2);
@@ -328,7 +335,7 @@ it('Should add track to room\'s track queue', function(done) {
     newRoom.addUser(newUser2);
     newRoom.addUser(newUser3);
 
-    var newTrack1 = 'track1';
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
 
     newRoom._onChange = newRoomOnChangeCheck;
 

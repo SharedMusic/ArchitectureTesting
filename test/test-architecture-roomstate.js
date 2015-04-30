@@ -17,9 +17,9 @@ describe("Architecture RoomState",function(){
 
     // Assert
     newRoomState.name.should.equal(newRoomName);
-    newRoomState.lastAction.should.equal('');
     newRoomState.users.should.be.an.instanceof(Set);
     newRoomState.users.size().should.equal(0);
+    newRoomState.currentSongEpoch.should.equal(-1);
     newRoomState.trackQueue.should.be.an.instanceof(Queue);
     newRoomState.trackQueue.isEmpty().should.equal(true);
     newRoomState.bootVotes.should.be.an.instanceof(Set);

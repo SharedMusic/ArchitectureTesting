@@ -24,13 +24,14 @@ exports.User.prototype = UserPrototype;
  * to update the views accordingly.
  * @constructor
  */
-exports.RoomState = function RoomState(p_name) {
+var RoomState = function (p_name) {
 	this.name = p_name;
 	this.users = new sets.Set();
 	this.currentSongEpoch = -1;
 	this.trackQueue = new Queue();
 	this.bootVotes = new sets.Set();
 }
+exports.RoomState = RoomState;
 
 /**
  * Room handles all relevant information for an individual
@@ -40,8 +41,6 @@ exports.RoomState = function RoomState(p_name) {
  * @constructor
  */
 exports.Room = function(p_name, p_id, p_onChange) {
-	
-	
 	/**
 	 *	The number of milliseconds between track being moved
 	 *	to the head of the queue and when client should begin
@@ -54,12 +53,6 @@ exports.Room = function(p_name, p_id, p_onChange) {
 	this._state = new RoomState(p_name);
 	this._onChange = p_onChange;
 	this._songTimeout = null;
-	this._playSong = function(track) {			//TODO refactor this ish
-		this._state.currentSongEpoch = (new Date).getTime() + this._loadDelay;
-		this._songTimeout = setTimeout(function() {
-			this.nextTrack();
-		}, track.duration + this._loadDelay);
-	};
 }
 var RoomPrototype = {
 
@@ -118,6 +111,11 @@ var RoomPrototype = {
 		this._onChange(this._state, null, null);
 	},
 
+	_playSong: function(track) {			//TODO refactor this ish
+		this._state.currentSongEpoch = (new Date).getTime() + this._loadDelay;
+		this._songTimeout = setTimeout(this.nextTrack, track.duration + this._loadDelay);
+	},
+
 	// Removes the head of the room's track queue
 	// and clears any votes for the song.
 	nextTrack: function () {
@@ -130,6 +128,7 @@ var RoomPrototype = {
 			if (this._state.trackQueue.isEmpty()) {
 				this._state.currentSongEpoch = -1;
 			} else {
+				console.log('hello');
 				this._playSong(this._state.trackQueue.peek());
 			}
 			this._onChange(this._state, null, null);
@@ -178,7 +177,7 @@ var RoomPrototype = {
 }
 exports.Room.prototype = RoomPrototype;
 
-function Queue(){
+function Queue() {
   var queue  = [];
   var offset = 0;
 

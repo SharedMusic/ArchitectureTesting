@@ -5,9 +5,10 @@ var _ = require('underscore')._;
 /**
  *	TODO comment user
  */
-exports.User = function (p_name, p_id) {
+exports.User = function (p_name, p_id, p_roomID) {
 	this.name = p_name;
 	this.id = p_id;
+	this.roomID = p_roomID;
 	this._addedTracks = [];
 }
 var UserPrototype = {
@@ -82,6 +83,8 @@ var RoomPrototype = {
 	// users in the room) then the next track
 	// is requested and boot votes are cleared.
 	bootTrack: function (user) {
+		this._checkUserExistsInRoom(user);
+
 		if(this._state.bootVotes.has(user.id)) {
 			this._onChange(null, 'User already voted to boot!', user.id);
 		} else if(!this._state.trackQueue.isEmpty()) {
@@ -99,6 +102,8 @@ var RoomPrototype = {
 
 	// Adds the track to the room's track queue
 	addTrack: function (user, track) {
+		this._checkUserExistsInRoom(user);
+
 		track.recommender = user.name;
 		this._state.trackQueue.enqueue(track);
 		user.addTrack(track);
@@ -114,6 +119,12 @@ var RoomPrototype = {
 	_playSong: function(track) {			//TODO refactor this ish
 		this._state.currentSongEpoch = (new Date).getTime() + this._loadDelay;
 		this._songTimeout = setTimeout(this.nextTrack, track.duration + this._loadDelay);
+	},
+
+	_checkUserExistsInRoom: function(user) {
+		if(!this._state.users.has(user)) {
+			this._onChange(null, 'User doesn\'t exist in room', user.id);
+		}
 	},
 
 	// Removes the head of the room's track queue
@@ -133,6 +144,10 @@ var RoomPrototype = {
 			}
 			this._onChange(this._state, null, null);
 		}
+	},
+
+	isEmpty: function() {
+		return this._state.users.size() == 0;
 	},
 
 	closeRoom: function() {

@@ -70,15 +70,46 @@ describe("Architecture Room",function(){
         done();
       };
 
-    // Act
     newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
     newUser = new User(newUserName, newUserID);
+
+    // Act
     newRoom.addUser(newUser, newRoomOnChange);
   });
 
-  //TODO test add multiple users to room (2 or more)
+  it('Should raise onChange with RoomState when successfully adding multiple users to room', function(done) {
+    // Arrange
+    var newUserName1 = 'testName';
+    var newUserID1 = 1;
+    var newUser1;
 
-  //TODO test cant add original user after adding other users
+    var newUserName2 = 'testName2';
+    var newUserID2 = 2;
+    var newUser2;
+
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+    var newRoomOnChange = 
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(userID);
+        should.not.exist(error);
+        roomState.should.not.equal(null);
+        roomState.users.size().should.equal(1);
+        roomState.users.has(newUser).should.equal(true);
+        done();
+      };
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+    newUser1 = new User(newUserName1, newUserID1);
+    newUser2 = new User(newUserName2, newUserID2);
+    newRoom.addUser(newUser1);
+    newRoom._onChange = newRoomOnChange;
+
+    // Act
+    newRoom.addUser(newUser2);
+  });
 
   it('Should raise onChange with error when adding same user twice to a room', function(done) {
     // Arrange
@@ -161,7 +192,6 @@ describe("Architecture Room",function(){
     newRoom.removeUser(newUser);
   });
 
-
   it('Should raise onChange with error when removing a non-existent user for room', function(done) {
     // Arrange
     var newRoomName = 'test';
@@ -189,7 +219,38 @@ describe("Architecture Room",function(){
     newRoom.removeUser(newUser);
   });
 
-  //TODO remove multiple users that exist
+  it('Should raise onChange when removing multiple users that exist from a room', function(done) {
+    // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    var newUserName1 = 'testName';
+    var newUserID1 = 1;
+    var newUser1;
+
+    var newUserName2 = 'testName2';
+    var newUserID2 = 2;
+    var newUser2;
+
+    var newRoomOnChange = 
+      function(roomState, error, userID) {
+        // Assert
+        newUserID.should.equal(userID);
+        should.not.exist(roomState);
+        error.should.not.equal(null);
+        error.should.equal('User didn\'t exist in room!');
+        done();
+      };
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+    newUser = new User(newUserName, newUserID);
+    newRoom.removeUser(newUser1);
+    newRoom._onChange = newRoomOnChange;
+
+    // Act
+    newRoom.removeUser(newUser2);
+  });
 
   it('Should add user vote to bootVotes when votes are insufficient', function(done) {
     // Arrange

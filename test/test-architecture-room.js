@@ -356,10 +356,12 @@ describe("Architecture Room",function(){
       function(roomState, error, userID) {
           // Assert
           should.not.exist(error);
+          should.not.exist(userID);
           roomState.should.not.equal(null);
           roomState.trackQueue.peek().title.should.equal('track2');
           roomState.bootVotes.size().should.equal(0);
           roomState.trackQueue.getLength().should.equal(1);
+          done();
       };
 
     // Act
@@ -371,17 +373,8 @@ it('Should add track to room\'s track queue', function(done) {
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
-    var newRoomOnChange = 
-      function(roomState, error) { };
-      
-    var newRoomOnChangeCheck = 
-      function(roomState, error) {
-        should.not.exist(error);
-        roomState.trackQueue.peek().should.equal('track1');
-        roomState.trackQueue.getLength().should.equal(1);
-    };
 
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    newRoom = new Room(newRoomName, newRoomID, function() {});
 
     var newUser1 = new User('user1', 1);
     var newUser2 = new User('user2', 2);
@@ -393,16 +386,18 @@ it('Should add track to room\'s track queue', function(done) {
 
     var newTrack1 = {title: 'track1', recommender: newUser1.name};
 
-    newRoom._onChange = newRoomOnChangeCheck;
+    newRoom._onChange = function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.peek().title.should.equal('track1');
+        roomState.trackQueue.getLength().should.equal(1);
+        done();
+    };
 
     // Act
     newRoom.addTrack(newUser1, newTrack1);
-
-    // Assert
-    newRoom._state.trackQueue.peek().should.equal('track1');
-    newRoom._state.trackQueue.getLength().should.equal(1);
-
-    done();
   });
 
 it('Should dequeue front song of multi-song queue on nextTrack', function(done) {
@@ -446,9 +441,10 @@ it('Should onChange error when dequeueing empty room trackQueue', function(done)
     var newRoom;
 
     var newRoomOnChangeCheck = 
-      function(roomState, error) {
+      function(roomState, error, userID) {
         // Assert
         should.not.exist(roomState);
+        should.not.exist(userID);
         error.should.equal('TrackQueue is empty!');
         done();
     };
@@ -459,3 +455,15 @@ it('Should onChange error when dequeueing empty room trackQueue', function(done)
     newRoom.nextTrack();
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+

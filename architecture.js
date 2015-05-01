@@ -132,8 +132,8 @@ var RoomPrototype = {
 	nextTrack: function () {
 		this._state.bootVotes = new sets.Set();
 
-		if(DEBUG && this._state.trackQueue.isEmpty()) {
-			console.log('TrackQueue is empty!');
+		if(this._state.trackQueue.isEmpty()) {
+			this._onChange(null, 'TrackQueue is empty!', null);
 		} else {
 			this._state.trackQueue.dequeue();
 			if (this._state.trackQueue.isEmpty()) {

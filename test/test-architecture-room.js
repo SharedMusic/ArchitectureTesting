@@ -291,7 +291,7 @@ describe("Architecture Room",function(){
     newRoom.bootTrack(newUser1);
   });
 
-  it('Should not let user vote twice on same track', function(done) {
+  it('Should error and not let user vote twice on same track', function(done) {
     // Arrange
     var newRoomName = 'test';
     var newRoomID = 1;
@@ -368,6 +368,16 @@ describe("Architecture Room",function(){
     newRoom.bootTrack(newUser2);
   });
 
+//TODO
+it('Should boot track and clear votes when boot votes are exactly half of room', function(done) {
+    // Arrange
+
+    // Assert
+    done();
+
+    // Act
+  });
+
 it('Should add track to room\'s track queue', function(done) {
     // Arrange
     var newRoomName = 'test';
@@ -398,6 +408,26 @@ it('Should add track to room\'s track queue', function(done) {
 
     // Act
     newRoom.addTrack(newUser1, newTrack1);
+  });
+
+//TODO
+it('Should add same track twice to room\'s track queue', function(done) {
+    // Arrange
+
+    // Assert
+    done();
+
+    // Act
+  });
+
+//TODO
+it('Should add multiple tracks to room\'s track queue', function(done) {
+    // Arrange
+
+    // Assert
+    done();
+
+    // Act
   });
 
 it('Should dequeue front song of multi-song queue on nextTrack', function(done) {

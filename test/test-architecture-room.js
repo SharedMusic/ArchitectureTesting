@@ -96,8 +96,8 @@ describe("Architecture Room",function(){
         should.not.exist(userID);
         should.not.exist(error);
         roomState.should.not.equal(null);
-        roomState.users.size().should.equal(1);
-        roomState.users.has(newUser).should.equal(true);
+        roomState.users.size().should.equal(2);
+        roomState.users.has(newUser2).should.equal(true);
         done();
       };
 
@@ -236,7 +236,7 @@ describe("Architecture Room",function(){
     var newRoomOnChange = 
       function(roomState, error, userID) {
         // Assert
-        newUserID.should.equal(userID);
+        newUserID2.should.equal(userID);
         should.not.exist(roomState);
         error.should.not.equal(null);
         error.should.equal('User didn\'t exist in room!');
@@ -244,7 +244,8 @@ describe("Architecture Room",function(){
       };
 
     newRoom = new Room(newRoomName, newRoomID, function() {});
-    newUser = new User(newUserName, newUserID);
+    newUser1 = new User(newUserName1, newUserID1);
+    newUser2 = new User(newUserName2, newUserID2);
     newRoom.removeUser(newUser1);
     newRoom._onChange = newRoomOnChange;
 
@@ -283,6 +284,8 @@ describe("Architecture Room",function(){
       roomState.trackQueue.getLength().should.equal(2);
       done();
     }
+
+    newRoom._onChange = newRoomOnChange;
 
     // Act
     newRoom.bootTrack(newUser1);
@@ -332,19 +335,8 @@ describe("Architecture Room",function(){
     var newRoomName = 'test';
     var newRoomID = 1;
     var newRoom;
-    var newRoomOnChange = 
-      function(roomState, error) { };
 
-    var newRoomOnChangeCheck = 
-      function(roomState, error) {
-        // Assert
-        should.not.exist(error);
-        roomState.trackQueue.peek().should.equal('track2');
-        roomState.bootVotes.size().should.equal(0);
-        roomState.trackQueue.getLength().should.equal(1);
-    };
-
-    newRoom = new Room(newRoomName, newRoomID, newRoomOnChange);
+    newRoom = new Room(newRoomName, newRoomID, function() {});
 
     var newUser1 = new User('user1', 1);
     var newUser2 = new User('user2', 2);
@@ -358,17 +350,20 @@ describe("Architecture Room",function(){
     var newTrack2 = {title: 'track2', recommender: newUser2.name};
 
     newRoom.addTrack(newUser1, newTrack1);
-    newRoom.addTrack(newTrack2);
+    newRoom.addTrack(newUser2, newTrack2);
+    newRoom.bootTrack(newUser1);
+    newRoom._onChange = 
+      function(roomState, error, userID) {
+          // Assert
+          should.not.exist(error);
+          roomState.should.not.equal(null);
+          roomState.trackQueue.peek().title.should.equal('track2');
+          roomState.bootVotes.size().should.equal(0);
+          roomState.trackQueue.getLength().should.equal(1);
+      };
 
     // Act
-    newRoom.bootTrack(newUser1);
     newRoom.bootTrack(newUser2);
-
-    // Assert
-    newRoom._state.bootVotes.size().should.equal(0);
-    newRoom._state.trackQueue.getLength().should.equal(1);
-
-    done();
   });
 
 it('Should add track to room\'s track queue', function(done) {

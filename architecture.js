@@ -139,7 +139,6 @@ var RoomPrototype = {
 			if (this._state.trackQueue.isEmpty()) {
 				this._state.currentSongEpoch = -1;
 			} else {
-				console.log('hello');
 				this._playSong(this._state.trackQueue.peek());
 			}
 			this._onChange(this._state, null, null);

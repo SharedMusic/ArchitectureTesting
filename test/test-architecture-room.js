@@ -371,12 +371,62 @@ describe("Architecture Room",function(){
 //TODO
 it('Should boot track and clear votes when boot votes are exactly half of room', function(done) {
     // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+    var newUser4 = new User('user4', 4);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+    newRoom.addUser(newUser3);
+    newRoom.addUser(newUser4);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name};
+
+    newRoom.addTrack(newUser1, newTrack1);
+    newRoom.addTrack(newUser2, newTrack2);
+    newRoom.bootTrack(newUser1);
+    newRoom._onChange = 
+      function(roomState, error, userID) {
+          // Assert
+          should.not.exist(error);
+          should.not.exist(userID);
+          roomState.should.not.equal(null);
+          roomState.trackQueue.peek().title.should.equal('track2');
+          roomState.bootVotes.size().should.equal(0);
+          roomState.trackQueue.getLength().should.equal(1);
+          done();
+      };
+
+    // Act
+    newRoom.bootTrack(newUser2);
+  });
+
+//TODO
+it('Should boot track when track is the last track in queue', function(done) {
+    // Arrange
 
     // Assert
     done();
 
     // Act
-  });
+});
+
+//TODO
+it('Should boot track when there is not track in the queue', function(done) {
+    // Arrange
+
+    // Assert
+
+    // Act
+});
 
 it('Should add track to room\'s track queue', function(done) {
     // Arrange

@@ -23,6 +23,7 @@ var roomReaper = setInterval(function() {
 
 io.sockets.on('connection', function(socket) {
 	console.log("A socket with id:" + socket.id + " has connected.");
+
 	socket.on('disconnect', function() {
 		var user = userIDToUser[socket.id];
 		if(user != null) {
@@ -41,13 +42,13 @@ io.sockets.on('connection', function(socket) {
 	socket.on('joinRoom', function(roomID, name) {
 		var room = rooms[roomID];
 
+		// TO DO - non existant room
 		var uName = room.getUniqueName(name);
 		var uID = socket.id;
 
 		var newUser = new User(uName, uID, roomID);
 
-		socket.broadcast.to(newUser.id)
-			.emit('userInfo', { name: newUser.name, id: newUser.id });
+		io.to(socket.id).emit('userInfo', { name: newUser.name, id: newUser.id });
 
 		socket.join(roomID);
 
@@ -58,12 +59,14 @@ io.sockets.on('connection', function(socket) {
 	socket.on('addTrack', function(roomID, userID, track) {
 		var room = rooms[roomID];
 
+		// TO DO - non existant room
 		room.addTrack(userID, track);
 	})
 
 	socket.on('bootTrack', function(roomID, userID) {
 		var room = rooms[roomID];
 
+		// TO DO - non existant room
 		socket.bootTrack(userID);
 	})
 
@@ -74,8 +77,20 @@ io.sockets.on('connection', function(socket) {
 	})	
 });
 
-function onRoomChange(roomState, error, userID) {
-	console.log('something changed!');
+var onRoomChange = function(roomID) {
+	return function(roomState, error, userID) {
+		if(!roomState) {
+			io.to(roomID).emit('onRoomUpdate', roomState);
+		} else if(!error) {
+			if(!userID) {
+				io.to(userID).emit('onError', error);
+			} else {
+				io.to(roomID).emit('onError', error);
+			}
+		} else {
+			io.to(roomID).emit('onClose');
+		}
+	};
 }
 
 app.get('/', function(req, res){
@@ -84,10 +99,10 @@ app.get('/', function(req, res){
 
 app.get('/createRoom', function(req, res){
 	var uRoomID = uuid.v4();
-	var newRoom = new Room('NewRoom', uRoomID, onRoomChange);
+	var newRoom = new Room('NewRoom', uRoomID, onRoomChange(uRoomID));
 
 	rooms[uRoomID] = newRoom;
-	res.send(uRoomID);
+	res.redirect('/room/?roomID=' + uRoomID);
 })
 
 app.param('roomID', function (req, res, next, roomID) {

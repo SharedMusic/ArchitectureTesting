@@ -25,7 +25,7 @@ io.sockets.on('connection', function(socket) {
 	console.log("A socket with id:" + socket.id + " has connected.");
 
 	socket.on('disconnect', function() {
-		var user = userIDToUser[socket.id];
+		/*var user = userIDToUser[socket.id];
 		if(user != null) {
 			var room = rooms[user.roomID];
 
@@ -36,7 +36,7 @@ io.sockets.on('connection', function(socket) {
 				delete rooms[room.id];
 				room.closeRoom();
 			}
-		}
+		}*/
 	});
 
 	socket.on('joinRoom', function(roomID, name) {
@@ -48,7 +48,8 @@ io.sockets.on('connection', function(socket) {
 
 		var newUser = new User(uName, uID, roomID);
 
-		io.to(socket.id).emit('userInfo', { name: newUser.name, id: newUser.id });
+
+		io.to(socket.id).emit('userInfo', newUser.name, newUser.id);
 
 		socket.join(roomID);
 
@@ -58,16 +59,18 @@ io.sockets.on('connection', function(socket) {
 
 	socket.on('addTrack', function(roomID, userID, track) {
 		var room = rooms[roomID];
+		var user = userIDToUser[userID];
 
 		// TO DO - non existant room
-		room.addTrack(userID, track);
+		room.addTrack(user, track);
 	})
 
 	socket.on('bootTrack', function(roomID, userID) {
 		var room = rooms[roomID];
+		var user = userIDToUser[userID];
 
 		// TO DO - non existant room
-		socket.bootTrack(userID);
+		socket.bootTrack(user);
 	})
 
 	socket.on('getRoomState', function(roomID, fn) {
@@ -79,10 +82,17 @@ io.sockets.on('connection', function(socket) {
 
 var onRoomChange = function(roomID) {
 	return function(roomState, error, userID) {
-		if(!roomState) {
-			io.to(roomID).emit('onRoomUpdate', roomState);
-		} else if(!error) {
-			if(!userID) {
+		if(roomState) {
+			io.to(roomID).emit('onRoomUpdate', 
+			{ 
+					name: roomState.name,
+					users: roomState.users.array(),
+					currentSongEpoch: roomState.currentSongEpoch,
+					trackQueue: roomState.trackQueue.getQueue(),
+					bootVotes: roomState.bootVotes
+			});
+		} else if(error) {
+			if(userID) {
 				io.to(userID).emit('onError', error);
 			} else {
 				io.to(roomID).emit('onError', error);
@@ -106,7 +116,6 @@ app.get('/createRoom', function(req, res){
 })
 
 app.param('roomID', function (req, res, next, roomID) {
-	console.log('roomID:' + roomID);
 	req.room = rooms[roomID];
 	next();
 }); 

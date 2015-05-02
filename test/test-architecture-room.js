@@ -414,7 +414,6 @@ it('Should boot track when track is the last track in queue', function(done) {
     // Arrange
 
     // Assert
-    done();
 
     // Act
 });
@@ -492,7 +491,7 @@ it('Should dequeue front song of multi-song queue on nextTrack', function(done) 
       function(roomState, error) {
         // Assert
         should.not.exist(error);
-        roomState.trackQueue.peek().should.equal('track2');
+        roomState.trackQueue.peek().title.should.equal('track2');
         roomState.trackQueue.getLength().should.equal(1);
 
         done();
@@ -502,8 +501,10 @@ it('Should dequeue front song of multi-song queue on nextTrack', function(done) 
 
     var newUser1 = new User('user1', 1);
 
-    var newTrack1 = 'track1';
-    var newTrack2 = 'track2';
+    var newTrack1 = { title: 'track1', duration: 60*60*1000 };
+    var newTrack2 = { title: 'track2', duration: 60*60*1000 };
+
+    newRoom.addUser(newUser1);
 
     newRoom.addTrack(newUser1, newTrack1);
     newRoom.addTrack(newUser1, newTrack2);

@@ -83,7 +83,9 @@ var RoomPrototype = {
 	// users in the room) then the next track
 	// is requested and boot votes are cleared.
 	bootTrack: function (user) {
-		this._checkUserExistsInRoom(user);
+		if(!this._checkUserExistsInRoom(user)) {
+			return;
+		}
 
 		if(this._state.bootVotes.has(user.id)) {
 			this._onChange(null, 'User already voted to boot!', user.id);
@@ -102,7 +104,9 @@ var RoomPrototype = {
 
 	// Adds the track to the room's track queue
 	addTrack: function (user, track) {
-		this._checkUserExistsInRoom(user);
+		if(!this._checkUserExistsInRoom(user)) {
+			return;
+		}
 
 		track.recommender = user.name;
 		this._state.trackQueue.enqueue(track);
@@ -113,6 +117,7 @@ var RoomPrototype = {
 			}
 			this._playSong(track);
 		}
+
 		this._onChange(this._state, null, null);
 	},
 
@@ -124,7 +129,11 @@ var RoomPrototype = {
 	_checkUserExistsInRoom: function(user) {
 		if(!this._state.users.has(user)) {
 			this._onChange(null, 'User doesn\'t exist in room', user.id);
+
+			return false;
 		}
+
+		return true;
 	},
 
 	// Removes the head of the room's track queue
@@ -218,6 +227,10 @@ function Queue() {
     }
 
     return item;
+  }
+
+  this.getQueue = function(){
+  	return queue.splice(offset, queue.length);
   }
 
   this.peek = function(){

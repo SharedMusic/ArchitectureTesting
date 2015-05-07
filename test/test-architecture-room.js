@@ -330,6 +330,38 @@ describe("Architecture Room",function(){
     newRoom.bootTrack(newUser1);
   });
 
+  it('Should ignore boot track from user not in the room', function(done) {
+    // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name};
+
+    newRoom.addTrack(newUser1, newTrack1);
+    newRoom.addTrack(newUser1, newTrack2);
+
+    // Act
+    newRoom.bootTrack(newUser3);
+
+    // Assert
+    newRoom._state.should.not.equal(null);
+    newRoom._state.trackQueue.getLength().should.equal(2);
+    newRoom._state.bootVotes.size().should.equal(0);
+
+    done();
+  });
+
   it('Should boot track and clear votes when boot votes are sufficient', function(done) {
     // Arrange
     var newRoomName = 'test';
@@ -368,8 +400,50 @@ describe("Architecture Room",function(){
     newRoom.bootTrack(newUser2);
   });
 
-//TODO
-it('Should boot track and clear votes when boot votes are exactly half of room', function(done) {
+  it('Should clear boot votes when song is done playing', function(done) {
+    // Arrange
+    this.timeout(10*1000);
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+    newRoom.addUser(newUser3);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name, duration: 1*1000};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name, duration: 1*1000};
+    var newTrack3 = {title: 'track3', recommender: newUser3.name, duration: 1*1000};
+
+    newRoom.addTrack(newUser1, newTrack1);
+    newRoom.addTrack(newUser2, newTrack2);
+    newRoom.addTrack(newUser3, newTrack3);
+
+    newRoom.bootTrack(newUser1);
+
+    newRoom._onChange =
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.peek().title.should.equal('track2');
+        roomState.trackQueue.getLength().should.equal(2);
+        roomState.bootVotes.size().should.equal(0);
+        done();
+      }
+    // Act 
+    // Wait for first song to finish playing
+
+  });
+
+  it('Should boot track and clear votes when boot votes are exactly half of room', function(done) {
     // Arrange
     var newRoomName = 'test';
     var newRoomID = 1;
@@ -409,22 +483,77 @@ it('Should boot track and clear votes when boot votes are exactly half of room',
     newRoom.bootTrack(newUser2);
   });
 
-//TODO
-it('Should boot track when track is the last track in queue', function(done) {
+  it('Should boot track when track is the last track in queue', function(done) {
     // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
 
-    // Assert
+    var newRoom = new Room(newRoomName, newRoomID, function() {});
+    var newUser = new User('user', 1);
+    var newTrack = {title: 'track', recommender: newUser.name};
+    
+    newRoom.addUser(newUser);
+    newRoom.addTrack(newUser, newTrack);
+    newRoom._onChange = 
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.getLength().should.equal(0);
+        roomState.currentSongEpoch.should.equal(-1);
+        roomState.bootVotes.size().should.equal(0);
+        done();
+      };
 
     // Act
+    newRoom.bootTrack(newUser);
 });
 
-//TODO
-it('Should boot track when there is not track in the queue', function(done) {
-    // Arrange
 
-    // Assert
+it('Should boot track when there is no track in the queue', function(done) {
+    // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+
+    var newRoom = new Room(newRoomName, newRoomID, function() {});
+    var newUser = new User('user', 1);
+
+    newRoom.addUser(newUser);
 
     // Act
+    newRoom.bootTrack(newUser);
+
+    // Assert
+    newRoom._state.should.not.equal(null);
+    newRoom._state.trackQueue.getLength().should.equal(0);
+    newRoom._state.currentSongEpoch.should.equal(-1);
+    newRoom._state.bootVotes.size().should.equal(0);
+    done();
+});
+
+it('Should boot track after all other songs in queue are booted', function(done) {
+    // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+
+    var newRoom = new Room(newRoomName, newRoomID, function() {});
+    var newUser = new User('user', 1);
+    var newTrack = {title: 'track', recommender: newUser.name};
+    
+    newRoom.addUser(newUser);
+    newRoom.addTrack(newUser, newTrack);
+    newRoom.bootTrack(newUser);
+
+    // Act
+    newRoom.bootTrack(newUser);
+
+    // Assert
+    newRoom._state.should.not.equal(null);
+    newRoom._state.trackQueue.getLength().should.equal(0);
+    newRoom._state.currentSongEpoch.should.equal(-1);
+    newRoom._state.bootVotes.size().should.equal(0);
+    done();
 });
 
 it('Should add track to room\'s track queue', function(done) {
@@ -459,24 +588,114 @@ it('Should add track to room\'s track queue', function(done) {
     newRoom.addTrack(newUser1, newTrack1);
   });
 
-//TODO
-it('Should add same track twice to room\'s track queue', function(done) {
+  it('Should ignore add track from user not in the room', function(done) {
     // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
 
-    // Assert
-    done();
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name};
 
     // Act
+    newRoom.addTrack(newUser3, newTrack1);
+    newRoom.addTrack(newUser1, newTrack2);
+
+    // Assert
+    newRoom._state.should.not.equal(null);
+    newRoom._state.trackQueue.getLength().should.equal(1);
+    newRoom._state.trackQueue.peek().title.should.equal('track2');
+    newRoom._state.bootVotes.size().should.equal(0);
+    
+    done();
   });
 
-//TODO
-it('Should add multiple tracks to room\'s track queue', function(done) {
+it('Should add same track twice to room\'s track queue', function(done) {
     // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
 
-    // Assert
-    done();
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+    newRoom.addUser(newUser3);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name, duration: 3*60*1000};
+    var newTrack2 = {title: 'track1', recommender: newUser1.name, duration: 3*60*1000};
+    
+    newRoom.addTrack(newUser1, newTrack1);
+    newRoom._onChange = 
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.getLength().should.equal(2);
+        roomState.trackQueue.peek().title.should.equal('track1');
+        roomState.trackQueue.dequeue();
+        roomState.trackQueue.peek().title.should.equal('track1');
+        done();
+      };
 
     // Act
+    newRoom.addTrack(newUser1, newTrack2);
+  });
+
+
+it('Should add multiple tracks to room\'s track queue', function(done) {
+    // Arrange
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+    newRoom.addUser(newUser3);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name, duration: 3*60*1000};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name, duration: 3*60*1000};
+    var newTrack3 = {title: 'track3', recommender: newUser3.name, duration: 3*60*1000};
+    
+    newRoom.addTrack(newUser1, newTrack1);
+    newRoom.addTrack(newUser2, newTrack2);
+    newRoom._onChange = 
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.getLength().should.equal(3);
+        roomState.trackQueue.peek().title.should.equal('track1');
+        roomState.trackQueue.dequeue();
+        roomState.trackQueue.peek().title.should.equal('track2');
+        roomState.trackQueue.dequeue();
+        roomState.trackQueue.peek().title.should.equal('track3');
+        done();
+      };
+
+    // Act
+    newRoom.addTrack(newUser3, newTrack3);
   });
 
 it('Should dequeue front song of multi-song queue on nextTrack', function(done) {
@@ -515,7 +734,7 @@ it('Should dequeue front song of multi-song queue on nextTrack', function(done) 
     newRoom.nextTrack();
   });
 
-it('Should onChange error when dequeueing empty room trackQueue', function(done) {
+  it('Should onChange error when dequeueing empty room trackQueue', function(done) {
     // Arrange
     var newRoomName = 'test';
     var newRoomID = 1;
@@ -535,16 +754,76 @@ it('Should onChange error when dequeueing empty room trackQueue', function(done)
     // Act
     newRoom.nextTrack();
   });
+
+  it('Should skip to the next song when song is done playing', function(done) {
+    // Arrange
+    this.timeout(10*1000);
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+    var newUser2 = new User('user2', 2);
+    var newUser3 = new User('user3', 3);
+
+    newRoom.addUser(newUser1);
+    newRoom.addUser(newUser2);
+    newRoom.addUser(newUser3);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name, duration: 1*1000};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name, duration: 1*1000};
+    var newTrack3 = {title: 'track3', recommender: newUser3.name, duration: 1*1000};
+
+    newRoom.addTrack(newUser1, newTrack1);
+    newRoom.addTrack(newUser2, newTrack2);
+    newRoom.addTrack(newUser3, newTrack3);
+
+    newRoom._onChange =
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.peek().title.should.equal('track2');
+        roomState.trackQueue.getLength().should.equal(2);
+        done();
+      }
+    // Act 
+    // Wait for first song to finish playing
+
+  });
+  
+  it('Should stop when last song is done playing', function(done) {
+    // Arrange
+    this.timeout(10*1000);
+    var newRoomName = 'test';
+    var newRoomID = 1;
+    var newRoom;
+
+    newRoom = new Room(newRoomName, newRoomID, function() {});
+
+    var newUser1 = new User('user1', 1);
+
+    newRoom.addUser(newUser1);
+
+    var newTrack1 = {title: 'track1', recommender: newUser1.name, duration: 1*1000};
+
+    newRoom.addTrack(newUser1, newTrack1);
+
+    newRoom._onChange =
+      function(roomState, error, userID) {
+        // Assert
+        should.not.exist(error);
+        should.not.exist(userID);
+        roomState.should.not.equal(null);
+        roomState.trackQueue.getLength().should.equal(0);
+        roomState.bootVotes.size().should.equal(0);
+        roomState.currentSongEpoch.should.equal(-1);
+        done();
+      }
+    // Act 
+    // Wait for song to finish playing
+  });
 });
-
-
-
-
-
-
-
-
-
-
-
-

@@ -21,7 +21,7 @@ function requestNewRoom(f) {
 		path: '/createRoom',
 		method: 'GET'
 	};
-	
+
 	http.request(options, function(res) {
 		res.setEncoding('utf8');
 
@@ -35,9 +35,9 @@ function requestNewRoom(f) {
 describe("Socket.io Operations", function() {
 	it('Should allow one user to join room', function(done) {
 		var proposedName = 'testUser';
-		
+
 		var client1 = io.connect(socketUrl, socketOptions);
-		
+
 		client1.on('onRoomUpdate', function(roomState) {
 			roomState.users.length.should.equal(1);
 			roomState.users[0].name.should.equal(proposedName);
@@ -76,7 +76,7 @@ describe("Socket.io Operations", function() {
 						key.name.should.equal(actualName1);
 						return exists = true;
 					}
-				});	
+				});
 				exists.should.equal(true);
 
 				if(++count == 2) {
@@ -98,7 +98,7 @@ describe("Socket.io Operations", function() {
 						key.name.should.equal(actualName2);
 						return exists = true;
 					}
-				});	
+				});
 
 				if(++count == 2) {
 					done();
@@ -143,7 +143,7 @@ describe("Socket.io Operations", function() {
 				roomState.trackQueue[0].title.should.equal(trackName);
 				roomState.trackQueue[0].duration.should.equal(trackDuration);
 				roomState.trackQueue[0].recommender = proposedName1;
-				
+
 				done();
 			}
 		});
@@ -158,7 +158,89 @@ describe("Socket.io Operations", function() {
 		requestNewRoom(function(roomID) {
 			newRoomID = roomID;
 			client1.emit('joinRoom', newRoomID, proposedName1);
-			
+
 		});
 	});
+
+  it('Should send update to all users when a new song is added to track queue', function(done) {
+    var trackName = 'newTrack';
+    var trackDuration = 60*60*1000;
+
+    var proposedName1 = 'testUser1';
+		var proposedName2 = 'testUser2';
+
+		var actualName1 = null;
+		var userID1 = null;
+		var actualName2 = null;
+		var userID2 = null;
+
+    var newRoomID = null;
+
+		var client1 = io.connect(socketUrl, socketOptions);
+		var client2 = io.connect(socketUrl, socketOptions);
+
+		var client1 = io.connect(socketUrl, socketOptions);
+
+		var count = 0;
+
+		client1.on('onRoomUpdate', function(roomState) {
+      count++;
+			if(count == 2) {
+        console.log("adding track");
+
+        // add track after second user is in room
+				client1.emit('addTrack', newRoomID, userID1, { title: trackName, duration: trackDuration});
+			}
+		});
+
+		client1.on('userInfo', function(actualName, userID) {
+			console.log(actualName + ' ' + userID);
+			actualName1 = actualName;
+			userID1 = userID;
+		});
+
+    client2.on('onRoomUpdate', function(roomState) {
+      if(count > 2) {
+				console.log(roomState.trackQueue);
+				roomState.trackQueue.length.should.equal(1);
+				console.log(roomState.trackQueue[0]);
+
+				roomState.trackQueue[0].title.should.equal(trackName);
+				roomState.trackQueue[0].duration.should.equal(trackDuration);
+				roomState.trackQueue[0].recommender = proposedName1;
+
+				done();
+      }
+    });
+
+    client2.on('userInfo', function(actualName, userID) {
+      actualName2 = actualName;
+      userID2 = userID;
+    });
+
+		requestNewRoom(function(roomID) {
+			newRoomID = roomID;
+			client1.emit('joinRoom', newRoomID, proposedName1);
+      client2.emit('joinRoom', newRoomID, proposedName2);
+		});
+
+  });
+
+  // TODO
+  it('Should send update to all users when a song gets a boot vote from a user', function(done) {
+    done()
+  });
+
+  // TODO
+  it('Should send update to all users when a song gets booted', function(done) {
+    done()
+  });
+
+  // TODO
+  it('Tests to see that roomReaper deletes a user from a room when they have disconnected', function(done) {
+    done()
+  });
+
+
+
 });

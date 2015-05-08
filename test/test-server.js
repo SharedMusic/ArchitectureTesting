@@ -117,7 +117,7 @@ describe("Socket.io Operations", function() {
 		});
 	});
 
-	it('Should add user tracks to room\s track queue', function(done){
+	it('Should add user tracks to room\'s track queue', function(done){
 		var proposedName1 = 'testUser1';
 		var trackName = 'newTrack';
 		var trackDuration = 60*60*1000;

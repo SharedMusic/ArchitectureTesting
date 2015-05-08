@@ -378,8 +378,8 @@ describe("Architecture Room",function(){
     newRoom.addUser(newUser2);
     newRoom.addUser(newUser3);
 
-    var newTrack1 = {title: 'track1', recommender: newUser1.name};
-    var newTrack2 = {title: 'track2', recommender: newUser2.name};
+    var newTrack1 = {title: 'track1', recommender: newUser1.name, duration: 60*1000};
+    var newTrack2 = {title: 'track2', recommender: newUser2.name, duration: 60*1000};
 
     newRoom.addTrack(newUser1, newTrack1);
     newRoom.addTrack(newUser2, newTrack2);
@@ -429,12 +429,12 @@ describe("Architecture Room",function(){
 
     newRoom._onChange =
       function(roomState, error, userID) {
+        newRoom._onChange = function() {};
+
         // Assert
         should.not.exist(error);
         should.not.exist(userID);
         roomState.should.not.equal(null);
-        roomState.trackQueue.peek().title.should.equal('track2');
-        roomState.trackQueue.getLength().should.equal(2);
         roomState.bootVotes.size().should.equal(0);
         done();
       }
@@ -780,15 +780,20 @@ it('Should dequeue front song of multi-song queue on nextTrack', function(done) 
     newRoom.addTrack(newUser2, newTrack2);
     newRoom.addTrack(newUser3, newTrack3);
 
+    var count = 0;
     newRoom._onChange =
       function(roomState, error, userID) {
-        // Assert
-        should.not.exist(error);
-        should.not.exist(userID);
-        roomState.should.not.equal(null);
-        roomState.trackQueue.peek().title.should.equal('track2');
-        roomState.trackQueue.getLength().should.equal(2);
-        done();
+        count++;
+
+        if(count == 1) {
+            // Assert
+            should.not.exist(error);
+            should.not.exist(userID);
+            roomState.should.not.equal(null);
+            roomState.trackQueue.peek().title.should.equal('track2');
+            roomState.trackQueue.getLength().should.equal(2);
+            done();
+        }
       }
     // Act 
     // Wait for first song to finish playing

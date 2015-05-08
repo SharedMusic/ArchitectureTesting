@@ -25,24 +25,29 @@ io.sockets.on('connection', function(socket) {
 	console.log("A socket with id:" + socket.id + " has connected.");
 
 	socket.on('disconnect', function() {
-		/*var user = userIDToUser[socket.id];
+		var user = userIDToUser[socket.id];
 		if(user != null) {
 			var room = rooms[user.roomID];
 
-			delete userIDToUser[socket.id];
 			room.removeUser(user);
+
+			delete userIDToUser[socket.id];
 
 			if(room.isEmpty()) {
 				delete rooms[room.id];
 				room.closeRoom();
 			}
-		}*/
+		}
 	});
 
 	socket.on('joinRoom', function(roomID, name) {
 		var room = rooms[roomID];
 
-		// TO DO - non existant room
+		if(!room) {
+			socket.emit('onError', 'Room does not exist for roomID.');
+			return;
+		}
+		
 		var uName = room.getUniqueName(name);
 		var uID = socket.id;
 
@@ -59,7 +64,16 @@ io.sockets.on('connection', function(socket) {
 
 	socket.on('addTrack', function(roomID, userID, track) {
 		var room = rooms[roomID];
+		if(!room) {
+			socket.emit('onError', 'Room does not exist for roomID.');
+			return;
+		}
+
 		var user = userIDToUser[userID];
+		if(!user) {
+			socket.emit('onError', 'User does not exist for userID');
+			return;
+		}
 
 		// TO DO - non existant room
 		room.addTrack(user, track);
@@ -67,14 +81,27 @@ io.sockets.on('connection', function(socket) {
 
 	socket.on('bootTrack', function(roomID, userID) {
 		var room = rooms[roomID];
-		var user = userIDToUser[userID];
+		if(!room) {
+			socket.emit('onError', 'Room does not exist for roomID.');
+			return;
+		}
 
-		// TO DO - non existant room
-		socket.bootTrack(user);
+		var user = userIDToUser[userID];
+		if(!user) {
+			socket.emit('onError', 'User does not exist for userID');
+			return;
+		}
+
+		room.bootTrack(user);
 	})
 
 	socket.on('getRoomState', function(roomID, fn) {
 		var room = rooms[roomID];
+		if(!room) {
+			socket.emit('onError', 'Room does not exist for roomID.');
+			return;
+		}
+
 
 		socket.emit('onRoomUpdate', room.getRoomState());
 	})	
@@ -89,7 +116,7 @@ var onRoomChange = function(roomID) {
 					users: roomState.users.array(),
 					currentSongEpoch: roomState.currentSongEpoch,
 					trackQueue: roomState.trackQueue.getQueue(),
-					bootVotes: roomState.bootVotes
+					bootVotes: roomState.bootVotes.array()
 			});
 		} else if(error) {
 			if(userID) {

@@ -90,8 +90,9 @@ var RoomPrototype = {
 		if(this._state.bootVotes.has(user.id)) {
 			this._onChange(null, 'User already voted to boot!', user.id);
 		} else if(!this._state.trackQueue.isEmpty()) {
+
+
 			this._state.bootVotes.add(user.id);
-			
 			if(this._state.bootVotes.size() >=
 			   Math.ceil(this._state.users.size() / 2)) {
 			   	clearTimeout(this._songTimeout);
@@ -123,7 +124,8 @@ var RoomPrototype = {
 
 	_playSong: function(track) {			//TODO refactor this ish
 		this._state.currentSongEpoch = (new Date).getTime() + this._loadDelay;
-		this._songTimeout = setTimeout(this.nextTrack, track.duration + this._loadDelay);
+		var that = this;
+		this._songTimeout = setTimeout(function(){that.nextTrack()}, track.duration + this._loadDelay);
 	},
 
 	_checkUserExistsInRoom: function(user) {
@@ -155,7 +157,7 @@ var RoomPrototype = {
 	},
 
 	isEmpty: function() {
-		return this._state.users.size() == 0;
+		return this._state == null || this._state.users.size() == 0;
 	},
 
 	closeRoom: function() {
@@ -230,7 +232,7 @@ function Queue() {
   }
 
   this.getQueue = function(){
-  	return queue.splice(offset, queue.length);
+  	return queue.slice(offset, queue.length);
   }
 
   this.peek = function(){

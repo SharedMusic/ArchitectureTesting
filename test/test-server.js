@@ -600,6 +600,104 @@ describe("Socket.io Operations", function() {
 		});
 	});
 
+	it('Should add room to server when new room is created.', function(done) {
+		var proposedName = 'testUser';
+
+		var client1 = io.connect(socketUrl, socketOptions);
+
+		client1.on('onRoomUpdate', function(roomState) {
+			roomState.users.length.should.equal(1);
+			roomState.users[0].name.should.equal(proposedName);
+
+			done();
+		});
+
+		client1.on('userInfo', function(actualName, userID) {
+			actualName.should.equal(proposedName);
+		});
+
+		requestNewRoom(function(roomID) {
+			client1.emit('joinRoom', roomID, proposedName);
+		});
+	});
+
+	it('Should remove room from server when all users leave.', function(done) {
+		var proposedName = 'testUser';
+
+		var room = null;
+
+		var client1 = io.connect(socketUrl, socketOptions);
+
+		client1.on('onRoomUpdate', function(roomState) {
+			client1.disconnect();
+			client1.emit('joinRoom', room, proposedName);
+		});
+
+		client1.on('onError', function(error) {
+			error.should.equal('Room does not exist for roomID.');
+			done();
+		});
+
+		client1.on('userInfo', function(actualName, userID) {
+			actualName.should.equal(proposedName);
+		});
+
+		requestNewRoom(function(roomID) {
+			room = roomID;
+			client1.emit('joinRoom', roomID, proposedName);
+		});
+	});
+
+	it('Should prevent users from joining rooms that are not created.', function(done) {
+		var proposedName = 'testUser';
+		var room = roomID;
+
+		var client1 = io.connect(socketUrl, socketOptions);
+
+		client1.on('onRoomUpdate', function(roomState) {
+			client1.disconnect();
+			client1.emit('joinRoom', room, proposedName);
+		});
+
+		client1.on('userInfo', function(actualName, userID) {
+			actualName.should.equal(proposedName);
+		});
+
+		client1.on('onError', function(error) {
+			error.should.equal('Room does not exist for roomID.');
+			done();
+		});
+
+		requestNewRoom(function(roomID) {
+			room = roomID;
+			client1.emit('joinRoom', roomID, proposedName);
+		});
+	});
+
+	/*	
+	it('Should prevent users from joining with the same username.', function(done) {
+		var proposedName = 'testUser';
+		var room = roomID;
+
+		var client1 = io.connect(socketUrl, socketOptions);
+		var client2 = io.connect(socketUrl, socketOptions);
+
+		client1.on('userInfo', function(actualName, userID) {
+			actualName.should.equal(proposedName);
+		});
+
+		client2.on('onError', function(error) {
+			//error.should.equal('');
+			done();
+		});
+
+		requestNewRoom(function(roomID) {
+			client1.emit('joinRoom', roomID, proposedName);
+			client2.emit('joinRoom', roomID, proposedName);
+		});
+	});
+	*/
+
 	/*
 	it('Should not allow user with existant userID (but not part of room) to add track to room.', function(done) {
 		var trackName = 'newTrack';
